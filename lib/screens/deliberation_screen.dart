@@ -993,7 +993,7 @@ class _DeliberationScreenState extends State<DeliberationScreen> {
   }
 }
 
-class _StrategistCard extends StatelessWidget {
+class _StrategistCard extends StatefulWidget {
   final Character character;
   final bool isActive;
   final String statusText;
@@ -1005,23 +1005,70 @@ class _StrategistCard extends StatelessWidget {
   });
 
   @override
+  State<_StrategistCard> createState() => _StrategistCardState();
+}
+
+class _StrategistCardState extends State<_StrategistCard>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _rotateController;
+  late AnimationController _dotsController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 펄스 애니메이션 (글로우 효과)
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // 회전 애니메이션
+    _rotateController = AnimationController(
+      duration: const Duration(seconds: 8),
+      vsync: this,
+    )..repeat();
+
+    // 점 애니메이션
+    _dotsController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _rotateController.dispose();
+    _dotsController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: isActive
+        color: widget.isActive
             ? AppColors.surfaceDark
             : AppColors.surfaceDark.withOpacity(0.5),
         border: Border.all(
-          color: isActive ? character.accentColor.withOpacity(0.5) : AppColors.borderDark,
-          width: isActive ? 2 : 1,
+          color: widget.isActive
+              ? widget.character.accentColor.withOpacity(0.5)
+              : AppColors.borderDark,
+          width: widget.isActive ? 2 : 1,
         ),
-        boxShadow: isActive
+        boxShadow: widget.isActive
             ? [
                 BoxShadow(
-                  color: character.accentColor.withOpacity(0.2),
+                  color: widget.character.accentColor.withOpacity(0.2),
                   blurRadius: 20,
                 ),
               ]
@@ -1029,67 +1076,162 @@ class _StrategistCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Avatar
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isActive
-                    ? character.accentColor
-                    : AppColors.borderDark,
-                width: 2,
-              ),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                character.thinkingImage,
-                fit: BoxFit.cover,
-              ),
+          // Avatar with rotating ring and pulse
+          SizedBox(
+            width: 100,
+            height: 100,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 펄스 글로우 효과
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.character.accentColor
+                                .withOpacity(_pulseAnimation.value),
+                            blurRadius: 25,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                // 회전하는 점들
+                AnimatedBuilder(
+                  animation: _rotateController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _rotateController.value * 2 * 3.14159,
+                      child: SizedBox(
+                        width: 95,
+                        height: 95,
+                        child: CustomPaint(
+                          painter: _OrbitingDotsPainter(
+                            color: widget.character.accentColor,
+                            dotCount: 8,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                // 캐릭터 이미지
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.isActive
+                          ? widget.character.accentColor
+                          : AppColors.borderDark,
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      widget.character.thinkingImage,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
 
           // Name
           Text(
-            character.name,
+            widget.character.name,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: isActive ? Colors.white : AppColors.textMuted,
+                  color: widget.isActive ? Colors.white : AppColors.textMuted,
                 ),
           ),
           const SizedBox(height: 4),
 
           // Status
           Text(
-            statusText,
+            widget.statusText,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isActive ? character.accentColor : AppColors.textMuted,
+                  color: widget.isActive
+                      ? widget.character.accentColor
+                      : AppColors.textMuted,
                 ),
           ),
 
           const SizedBox(height: 8),
 
-          // Activity indicator
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (index) {
-              return Container(
-                width: 4,
-                height: 4,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: (isActive && index == 1)
-                      ? character.accentColor
-                      : character.accentColor.withOpacity(0.3),
-                ),
+          // Animated dots indicator
+          AnimatedBuilder(
+            animation: _dotsController,
+            builder: (context, child) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (index) {
+                  final delay = index * 0.2;
+                  final animValue = ((_dotsController.value + delay) % 1.0);
+                  final scale = 0.5 + (animValue < 0.5 ? animValue : 1 - animValue);
+                  return Transform.scale(
+                    scale: scale + 0.5,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: widget.character.accentColor
+                            .withOpacity(0.4 + scale * 0.6),
+                      ),
+                    ),
+                  );
+                }),
               );
-            }),
+            },
           ),
         ],
       ),
     );
   }
+}
+
+// 회전하는 점들을 그리는 CustomPainter
+class _OrbitingDotsPainter extends CustomPainter {
+  final Color color;
+  final int dotCount;
+
+  _OrbitingDotsPainter({required this.color, required this.dotCount});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    for (int i = 0; i < dotCount; i++) {
+      final angle = (i / dotCount) * 2 * 3.14159;
+      final dotX = center.dx + radius * cos(angle);
+      final dotY = center.dy + radius * sin(angle);
+
+      // 점 크기를 다르게 해서 입체감
+      final dotSize = 2.0 + (i % 3) * 0.5;
+      final opacity = 0.3 + (i % 3) * 0.2;
+
+      final paint = Paint()
+        ..color = color.withOpacity(opacity)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(Offset(dotX, dotY), dotSize, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
