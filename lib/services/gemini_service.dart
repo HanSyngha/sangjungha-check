@@ -1,41 +1,18 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 import '../models/character.dart';
 import '../models/strategy.dart';
 
 class GeminiService {
-  late GenerativeModel _geminiModel;
   String? _xaiApiKey;
   bool _isInitialized = false;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
-
-    // Gemini 초기화
-    final geminiKey = dotenv.env['GEMINI_API_KEY'];
-    if (geminiKey != null && geminiKey.isNotEmpty) {
-      _geminiModel = GenerativeModel(
-        model: 'gemini-2.0-flash',
-        apiKey: geminiKey,
-        generationConfig: GenerationConfig(
-          temperature: 0.8,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        ),
-      );
-    }
-
-    // xAI 키 저장
     _xaiApiKey = dotenv.env['XAI_API_KEY'];
-
     _isInitialized = true;
   }
-
-  static const int _maxRetries = 3;
-  static const Duration _retryDelay = Duration(seconds: 2);
 
   Future<GeminiResponse> generateStrategy({
     required Character character,
@@ -52,60 +29,30 @@ $concern
 
 위 내용을 분석하여 JSON 형식으로 응답해주세요.''';
 
-    // 3번까지 재시도 (1번: Gemini, 2-3번: Grok)
-    for (int attempt = 1; attempt <= _maxRetries; attempt++) {
-      try {
-        String? responseText;
+    try {
+      final responseText = await _callGrok(prompt);
 
-        if (attempt == 1) {
-          // 첫 번째 시도: Gemini
-          print('=== Trying Gemini API (attempt $attempt) ===');
-          responseText = await _callGemini(prompt);
-        } else {
-          // 2-3번째 시도: xAI Grok
-          print('=== Trying xAI Grok API (attempt $attempt) ===');
-          responseText = await _callGrok(prompt);
-        }
-
-        if (responseText == null || responseText.isEmpty) {
-          throw Exception('Empty response');
-        }
-
-        // Extract JSON from response
-        final jsonString = _extractJson(responseText);
-        final jsonData = json.decode(jsonString) as Map<String, dynamic>;
-
-        return GeminiResponse.fromJson(jsonData);
-      } catch (e) {
-        print('=== API Error (attempt $attempt/$_maxRetries) ===');
-        print('Error: $e');
-
-        // JSON 파싱 에러는 fallback 반환
-        if (e.toString().contains('FormatException')) {
-          return GeminiResponse(
-            isConcern: true,
-            result: _getFallbackStrategy(character),
-          );
-        }
-
-        // 마지막 시도가 아니면 대기 후 재시도
-        if (attempt < _maxRetries) {
-          await Future.delayed(_retryDelay);
-          continue;
-        }
-
-        // 3번 모두 실패
-        return GeminiResponse.serverBusy();
+      if (responseText == null || responseText.isEmpty) {
+        throw Exception('Empty response');
       }
+
+      final jsonString = _extractJson(responseText);
+      final jsonData = json.decode(jsonString) as Map<String, dynamic>;
+
+      return GeminiResponse.fromJson(jsonData);
+    } catch (e) {
+      print('=== Grok API Error ===');
+      print('Error: $e');
+
+      if (e.toString().contains('FormatException')) {
+        return GeminiResponse(
+          isConcern: true,
+          result: _getFallbackStrategy(character),
+        );
+      }
+
+      return GeminiResponse.serverBusy();
     }
-
-    return GeminiResponse.serverBusy();
-  }
-
-  Future<String?> _callGemini(String prompt) async {
-    final content = [Content.text(prompt)];
-    final response = await _geminiModel.generateContent(content);
-    return response.text;
   }
 
   Future<String?> _callGrok(String prompt) async {
@@ -120,7 +67,7 @@ $concern
         'Authorization': 'Bearer $_xaiApiKey',
       },
       body: json.encode({
-        'model': 'grok-3-fast',
+        'model': 'grok-4-1-fast-non-reasoning',
         'messages': [
           {'role': 'user', 'content': prompt}
         ],
