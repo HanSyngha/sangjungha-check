@@ -1,0 +1,52 @@
+name: strategy_advisor
+description: "상중하책 생성기 - 삼국지 전략가들의 조언"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Google Gemini AI
+  google_generative_ai: ^0.4.6
+
+  # HTTP for xAI Grok API fallback
+  http: ^1.2.0
+
+  # UI & Fonts
+  google_fonts: ^6.1.0
+
+  # State Management
+  provider: ^6.1.1
+
+  # Animations
+  flutter_animate: ^4.3.0
+
+  # Environment Variables
+  flutter_dotenv: ^5.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "../Logo.png"
+  adaptive_icon_background: "#1A1B2E"
+  adaptive_icon_foreground: "../Logo.png"
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - .env
