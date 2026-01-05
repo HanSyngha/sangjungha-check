@@ -6,6 +6,8 @@ import '../config/theme.dart';
 import '../models/character.dart';
 import '../models/strategy.dart';
 import '../providers/app_provider.dart';
+import '../services/ad_service.dart';
+import '../widgets/ad_banner_widget.dart';
 import 'result_screen.dart';
 
 class DeliberationScreen extends StatefulWidget {
@@ -27,6 +29,7 @@ class _DeliberationScreenState extends State<DeliberationScreen> {
 
   Future<void> _startGeneration() async {
     final provider = context.read<AppProvider>();
+    final adService = AdService();
 
     // Simulate progress updates
     _simulateProgress();
@@ -36,6 +39,11 @@ class _DeliberationScreenState extends State<DeliberationScreen> {
 
     // Navigate to result when done
     if (mounted && provider.state == AppState.success) {
+      // 상담 횟수 증가 및 전면 광고 표시 (10회마다)
+      adService.incrementConsultationCount();
+      await adService.showInterstitialAdIfNeeded();
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -713,6 +721,9 @@ class _DeliberationScreenState extends State<DeliberationScreen> {
                 ),
               ),
             ),
+
+            // Banner Ad
+            const AdBannerWidget(),
           ],
         ),
       ),

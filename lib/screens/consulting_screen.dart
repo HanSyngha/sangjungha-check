@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/app_provider.dart';
+import '../widgets/ad_banner_widget.dart';
 import 'deliberation_screen.dart';
 
 class ConsultingScreen extends StatefulWidget {
@@ -62,6 +63,9 @@ class _ConsultingScreenState extends State<ConsultingScreen> {
                 ),
               ),
             ),
+
+            // Banner Ad
+            const AdBannerWidget(),
           ],
         ),
       ),

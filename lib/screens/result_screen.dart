@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/strategy.dart';
 import '../providers/app_provider.dart';
+import '../widgets/ad_banner_widget.dart';
 import 'character_selection_screen.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -100,6 +101,9 @@ class _ResultScreenState extends State<ResultScreen> {
                 },
               ),
             ),
+
+            // Banner Ad
+            const AdBannerWidget(),
           ],
         ),
       ),

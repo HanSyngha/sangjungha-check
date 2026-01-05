@@ -6,12 +6,16 @@ import 'package:provider/provider.dart';
 import 'config/theme.dart';
 import 'providers/app_provider.dart';
 import 'screens/character_selection_screen.dart';
+import 'services/ad_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
   await dotenv.load(fileName: '.env');
+
+  // Initialize AdMob
+  await AdService().initialize();
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
